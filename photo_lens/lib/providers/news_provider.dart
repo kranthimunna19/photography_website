@@ -59,6 +59,7 @@ class NewsProvider extends ChangeNotifier {
         category: 'Camera News',
         readTime: 5,
         tags: ['Canon', 'Mirrorless', '8K', 'Photography'],
+        url: 'https://www.canon.com/news/eos-r5-mark-ii',
       ),
       NewsArticle(
         id: '2',
@@ -71,6 +72,7 @@ class NewsProvider extends ChangeNotifier {
         category: 'Technology',
         readTime: 8,
         tags: ['AI', 'Editing', 'Technology', 'Software'],
+        url: 'https://www.digitalartsmag.com/ai-photo-editing',
       ),
       NewsArticle(
         id: '3',
@@ -83,6 +85,7 @@ class NewsProvider extends ChangeNotifier {
         category: 'Mobile Photography',
         readTime: 6,
         tags: ['Mobile', 'Smartphone', 'DSLR', 'Comparison'],
+        url: 'https://www.mobilephotoweekly.com/smartphones-vs-dslrs',
       ),
       NewsArticle(
         id: '4',
@@ -95,6 +98,7 @@ class NewsProvider extends ChangeNotifier {
         category: 'Sustainability',
         readTime: 7,
         tags: ['Sustainability', 'Environment', 'Green', 'Practice'],
+        url: 'https://www.greenphotography.com/eco-friendly-practices',
       ),
       NewsArticle(
         id: '5',
@@ -107,6 +111,7 @@ class NewsProvider extends ChangeNotifier {
         category: 'Tutorial',
         readTime: 10,
         tags: ['Portrait', 'Natural Light', 'Tutorial', 'Technique'],
+        url: 'https://www.portraitmasters.com/natural-light-guide',
       ),
     ];
     

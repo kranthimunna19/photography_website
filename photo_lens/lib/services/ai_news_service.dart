@@ -18,6 +18,11 @@ class AINewsService {
     }
 
     try {
+      // Check if we're in demo mode or API keys are not configured
+      if (APIConfig.isDemoMode || !APIConfig.isConfigured) {
+        return _getDemoArticles();
+      }
+
       // Fetch news from multiple sources
       final List<NewsArticle> allArticles = [];
       
@@ -43,8 +48,8 @@ class AINewsService {
       return allArticles;
     } catch (e) {
       print('Error fetching news: $e');
-      // Return cached data if available, otherwise return empty list
-      return _cachedArticles.isNotEmpty ? _cachedArticles : [];
+      // Return demo data if API fails
+      return _getDemoArticles();
     }
   }
 
@@ -71,6 +76,7 @@ class AINewsService {
             category: _categorizeArticle(article['title'] ?? ''),
             readTime: _calculateReadTime(article['content'] ?? ''),
             tags: _extractTags(article['title'] ?? '', article['description'] ?? ''),
+            url: article['url'] ?? '',
           );
         }).toList();
       }
@@ -154,6 +160,7 @@ Make the content current and relevant to photographers.
         category: 'Camera Technology',
         readTime: 4,
         tags: ['Sony', 'Global Shutter', 'Technology', 'Sports Photography'],
+        url: '',
       ),
       NewsArticle(
         id: 'industry_2',
@@ -166,6 +173,7 @@ Make the content current and relevant to photographers.
         category: 'Software',
         readTime: 6,
         tags: ['Adobe', 'Lightroom', 'AI', 'Editing'],
+        url: '',
       ),
     ];
   }
@@ -193,6 +201,7 @@ Make the content current and relevant to photographers.
             category: article['category'] ?? 'Technology',
             readTime: _calculateReadTime(article['content'] ?? ''),
             tags: List<String>.from(article['tags'] ?? []),
+            url: article['url'] ?? '',
           );
         }).toList();
       }
@@ -263,6 +272,11 @@ Make the content current and relevant to photographers.
 
   /// Search news articles using AI
   static Future<List<NewsArticle>> searchNews(String query) async {
+    // Check if we're in demo mode or API keys are not configured
+    if (APIConfig.isDemoMode || !APIConfig.isConfigured) {
+      return _searchDemoArticles(query);
+    }
+
     try {
       final prompt = '''
 Search for photography news related to: "$query"
@@ -308,11 +322,111 @@ Focus on recent and relevant information.
       print('Error searching news: $e');
     }
     
-    return [];
+    return _searchDemoArticles(query);
+  }
+
+  /// Search demo articles
+  static List<NewsArticle> _searchDemoArticles(String query) {
+    final allArticles = _getDemoArticles();
+    final lowerQuery = query.toLowerCase();
+    
+    return allArticles.where((article) =>
+      article.title.toLowerCase().contains(lowerQuery) ||
+      article.summary.toLowerCase().contains(lowerQuery) ||
+      article.content.toLowerCase().contains(lowerQuery) ||
+      article.tags.any((tag) => tag.toLowerCase().contains(lowerQuery))
+    ).toList();
+  }
+
+  /// Get demo articles for testing
+  static List<NewsArticle> _getDemoArticles() {
+    return [
+      NewsArticle(
+        id: 'demo_1',
+        title: '🤖 AI-Powered Photography: The Future is Here',
+        summary: 'Discover how artificial intelligence is revolutionizing photography with smart editing, composition analysis, and automated workflows.',
+        content: 'Artificial intelligence is transforming the photography industry at an unprecedented pace. From AI-powered editing tools that can automatically enhance images to intelligent composition analysis that helps photographers improve their skills, the integration of AI is creating new possibilities for both professionals and enthusiasts alike. Leading software companies are now incorporating machine learning algorithms that can detect subjects, analyze lighting conditions, and suggest optimal camera settings. This technology is not just about automation; it\'s about empowering photographers to focus on creativity while AI handles the technical complexities.',
+        imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
+        author: 'AI Photography Weekly',
+        date: DateTime.now().subtract(const Duration(hours: 1)),
+        category: 'AI Photography',
+        readTime: 6,
+        tags: ['AI', 'Technology', 'Photography', 'Machine Learning', 'Editing'],
+        url: '',
+      ),
+      NewsArticle(
+        id: 'demo_2',
+        title: '📱 iPhone 15 Pro Max: Computational Photography Breakthrough',
+        summary: 'Apple\'s latest flagship introduces revolutionary computational photography features that challenge traditional DSLRs.',
+        content: 'The iPhone 15 Pro Max represents a significant leap forward in computational photography, featuring advanced AI algorithms that can capture stunning images in challenging lighting conditions. The new A17 Pro chip enables real-time processing of multiple exposures, creating images with exceptional dynamic range and detail. The device\'s ability to simulate shallow depth of field and professional lighting effects is making it a serious contender for professional photography work. This development signals a broader trend in the industry where computational photography is becoming as important as optical quality.',
+        imageUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800',
+        author: 'Mobile Photography Today',
+        date: DateTime.now().subtract(const Duration(hours: 3)),
+        category: 'Mobile Photography',
+        readTime: 8,
+        tags: ['iPhone', 'Mobile', 'Computational Photography', 'Apple', 'Technology'],
+        url: '',
+      ),
+      NewsArticle(
+        id: 'demo_3',
+        title: '📸 Sony A9 III: Global Shutter Revolution',
+        summary: 'Sony\'s latest flagship camera introduces the world\'s first full-frame global shutter, eliminating rolling shutter distortion.',
+        content: 'Sony has announced the Alpha 9 III, featuring the world\'s first full-frame global shutter sensor. This revolutionary technology eliminates rolling shutter distortion completely, enabling photographers to capture fast-moving subjects with perfect clarity. The global shutter also allows for flash synchronization at any shutter speed, opening new possibilities for sports and action photography. This development represents a significant milestone in camera technology and could reshape how we think about high-speed photography.',
+        imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+        author: 'Camera Technology Review',
+        date: DateTime.now().subtract(const Duration(hours: 5)),
+        category: 'Camera News',
+        readTime: 7,
+        tags: ['Sony', 'Global Shutter', 'Technology', 'Sports Photography', 'Mirrorless'],
+        url: '',
+      ),
+      NewsArticle(
+        id: 'demo_4',
+        title: '🎨 Adobe Lightroom AI: Smart Masking Revolution',
+        summary: 'Adobe introduces AI-powered smart masking that automatically detects and masks subjects, skies, and objects.',
+        content: 'Adobe has released a major update to Lightroom with AI-powered smart masking capabilities that are revolutionizing the editing workflow. The new feature can automatically detect and mask subjects, skies, and objects with incredible accuracy, dramatically reducing editing time for photographers. This technology uses advanced machine learning algorithms to understand image content and create precise selections. The update also includes AI-powered noise reduction and sharpening tools that adapt to different types of content.',
+        imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
+        author: 'Digital Photography Review',
+        date: DateTime.now().subtract(const Duration(hours: 7)),
+        category: 'Software',
+        readTime: 5,
+        tags: ['Adobe', 'Lightroom', 'AI', 'Editing', 'Software'],
+        url: '',
+      ),
+      NewsArticle(
+        id: 'demo_5',
+        title: '🌅 Mastering Golden Hour: A Complete Guide',
+        summary: 'Learn how to harness the magical light of golden hour to create stunning, warm-toned photographs.',
+        content: 'Golden hour, the period shortly after sunrise or before sunset, offers photographers the most beautiful natural lighting conditions. The soft, warm light creates flattering portraits, dramatic landscapes, and stunning architectural photography. Understanding how to work with this light involves more than just timing; it requires knowledge of positioning, exposure settings, and post-processing techniques. This comprehensive guide covers everything from finding the perfect location to editing golden hour images for maximum impact.',
+        imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+        author: 'Photography Masters',
+        date: DateTime.now().subtract(const Duration(hours: 9)),
+        category: 'Tutorial',
+        readTime: 12,
+        tags: ['Golden Hour', 'Natural Light', 'Tutorial', 'Landscape', 'Portrait'],
+        url: '',
+      ),
+    ];
   }
 
   /// Get trending topics in photography
   static Future<List<String>> getTrendingTopics() async {
+    // Check if we're in demo mode or API keys are not configured
+    if (APIConfig.isDemoMode || !APIConfig.isConfigured) {
+      return [
+        'AI Photography',
+        'Mirrorless Cameras',
+        'Mobile Photography',
+        'Drone Photography',
+        'Street Photography',
+        'Portrait Photography',
+        'Landscape Photography',
+        'Wedding Photography',
+        'Product Photography',
+        'Documentary Photography',
+      ];
+    }
+
     try {
       final prompt = '''
 What are the top 10 trending topics in photography right now?

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../models/news_article.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:js' as js;
 
 class NewsCard extends StatelessWidget {
   final NewsArticle article;
@@ -23,9 +27,20 @@ class NewsCard extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // Navigate to article detail page
-          // context.go('/news/${article.id}');
+        onTap: () async {
+          if (article.url.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No original article available for this news item.')),
+            );
+            return;
+          }
+          print("Attempting to launch: ' [article.url]'");
+          final url = Uri.parse(article.url);
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url, mode: LaunchMode.platformDefault);
+          } else {
+            print("Could not launch ' [article.url]'");
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(16),

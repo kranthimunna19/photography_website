@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'models/news_article.dart';
 import 'screens/home_screen.dart';
 import 'screens/gallery_screen.dart';
 import 'screens/news_screen.dart';
+import 'screens/news_detail_screen.dart';
 import 'screens/reviews_screen.dart';
 import 'screens/about_screen.dart';
 import 'providers/theme_provider.dart';
@@ -93,6 +95,14 @@ final GoRouter _router = GoRouter(
       path: '/news',
       name: 'news',
       builder: (context, state) => const NewsScreen(),
+    ),
+    GoRoute(
+      path: '/news/detail',
+      name: 'news-detail',
+      builder: (context, state) {
+        final article = state.extra as NewsArticle;
+        return NewsDetailScreen(article: article);
+      },
     ),
     GoRoute(
       path: '/reviews',

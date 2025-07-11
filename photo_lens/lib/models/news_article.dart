@@ -9,6 +9,7 @@ class NewsArticle {
   final String category;
   final int readTime;
   final List<String> tags;
+  final String url;
 
   NewsArticle({
     required this.id,
@@ -21,6 +22,7 @@ class NewsArticle {
     required this.category,
     required this.readTime,
     required this.tags,
+    required this.url,
   });
 
   factory NewsArticle.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class NewsArticle {
       category: json['category'] as String,
       readTime: json['readTime'] as int,
       tags: List<String>.from(json['tags'] as List),
+      url: json['url'] as String,
     );
   }
 
@@ -50,6 +53,7 @@ class NewsArticle {
       'category': category,
       'readTime': readTime,
       'tags': tags,
+      'url': url,
     };
   }
 } 
