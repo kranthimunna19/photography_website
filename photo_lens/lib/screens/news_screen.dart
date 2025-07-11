@@ -14,7 +14,9 @@ class NewsScreen extends StatefulWidget {
 
 class _NewsScreenState extends State<NewsScreen> {
   String? selectedCategory;
+  String? selectedTrendingTopic;
   final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -37,40 +39,166 @@ class _NewsScreenState extends State<NewsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Photography News'),
+        title: const Text('AI Photography News'),
         backgroundColor: colorScheme.surface,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/'),
         ),
+        actions: [
+          // AI Mode Toggle
+          Consumer<NewsProvider>(
+            builder: (context, newsProvider, child) {
+              return Switch(
+                value: newsProvider.isAIMode,
+                onChanged: (value) {
+                  newsProvider.toggleAIMode();
+                },
+                activeColor: colorScheme.primary,
+              );
+            },
+          ),
+          // Refresh Button
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              context.read<NewsProvider>().refreshNews();
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
+          // AI Status Banner
+          Consumer<NewsProvider>(
+            builder: (context, newsProvider, child) {
+              if (newsProvider.isAIMode) {
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: colorScheme.primaryContainer,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.psychology,
+                        size: 16,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'AI-Powered News • Real-time updates',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          
           // Search and Filter Section
           Container(
             padding: const EdgeInsets.all(16),
             color: colorScheme.surface,
             child: Column(
               children: [
-                // Search Bar
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search articles...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                // Search Bar with AI Search
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search with AI...',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _isSearching 
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              )
+                            : const Icon(Icons.psychology),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: colorScheme.surfaceVariant,
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _isSearching = value.isNotEmpty;
+                          });
+                          if (value.isNotEmpty) {
+                            _performSearch(value);
+                          } else {
+                            context.read<NewsProvider>().loadArticles();
+                          }
+                        },
+                      ),
                     ),
-                    filled: true,
-                    fillColor: colorScheme.surfaceVariant,
-                  ),
-                  onChanged: (value) {
-                    setState(() {});
-                  },
+                  ],
                 ),
                 
                 const SizedBox(height: 16),
+                
+                // Trending Topics
+                Consumer<NewsProvider>(
+                  builder: (context, newsProvider, child) {
+                    if (newsProvider.trendingTopics.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '🔥 Trending Topics',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              ...newsProvider.trendingTopics.map((topic) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    label: Text(topic),
+                                    selected: selectedTrendingTopic == topic,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        selectedTrendingTopic = selected ? topic : null;
+                                      });
+                                      if (selected) {
+                                        _searchController.text = topic;
+                                        _performSearch(topic);
+                                      }
+                                    },
+                                    backgroundColor: colorScheme.surfaceVariant,
+                                    selectedColor: colorScheme.primaryContainer,
+                                    checkmarkColor: colorScheme.onPrimaryContainer,
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  },
+                ),
                 
                 // Category Filters
                 Consumer<NewsProvider>(
@@ -87,7 +215,9 @@ class _NewsScreenState extends State<NewsScreen> {
                             onTap: () {
                               setState(() {
                                 selectedCategory = null;
+                                selectedTrendingTopic = null;
                               });
+                              context.read<NewsProvider>().loadArticles();
                             },
                           ),
                           const SizedBox(width: 8),
@@ -100,6 +230,7 @@ class _NewsScreenState extends State<NewsScreen> {
                                 onTap: () {
                                   setState(() {
                                     selectedCategory = category;
+                                    selectedTrendingTopic = null;
                                   });
                                 },
                               ),
@@ -119,7 +250,16 @@ class _NewsScreenState extends State<NewsScreen> {
             child: Consumer<NewsProvider>(
               builder: (context, newsProvider, child) {
                 if (newsProvider.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Loading AI-powered news...'),
+                      ],
+                    ),
+                  );
                 }
                 
                 if (newsProvider.error != null) {
@@ -159,9 +299,9 @@ class _NewsScreenState extends State<NewsScreen> {
                   filteredArticles = newsProvider.getArticlesByCategory(selectedCategory!);
                 }
                 
-                // Apply search filter
-                if (_searchController.text.isNotEmpty) {
-                  filteredArticles = newsProvider.searchArticles(_searchController.text);
+                // Apply trending topic filter
+                if (selectedTrendingTopic != null) {
+                  filteredArticles = newsProvider.getArticlesByTag(selectedTrendingTopic!);
                 }
                 
                 if (filteredArticles.isEmpty) {
@@ -183,26 +323,43 @@ class _NewsScreenState extends State<NewsScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Try adjusting your search or filter criteria',
+                          newsProvider.isAIMode 
+                            ? 'Try searching for a different topic or check back later for updates'
+                            : 'Try adjusting your search or filter criteria',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
                           textAlign: TextAlign.center,
                         ),
+                        if (newsProvider.isAIMode) ...[
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              newsProvider.refreshNews();
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Refresh News'),
+                          ),
+                        ],
                       ],
                     ),
                   );
                 }
                 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: filteredArticles.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: NewsCard(article: filteredArticles[index]),
-                    );
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await newsProvider.refreshNews();
                   },
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filteredArticles.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: NewsCard(article: filteredArticles[index]),
+                      );
+                    },
+                  ),
                 );
               },
             ),
@@ -210,5 +367,21 @@ class _NewsScreenState extends State<NewsScreen> {
         ],
       ),
     );
+  }
+
+  void _performSearch(String query) async {
+    if (query.isEmpty) return;
+    
+    setState(() {
+      _isSearching = true;
+    });
+    
+    try {
+      await context.read<NewsProvider>().searchArticles(query);
+    } finally {
+      setState(() {
+        _isSearching = false;
+      });
+    }
   }
 } 
